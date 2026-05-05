@@ -1,0 +1,30 @@
+# Repo housekeeping
+.git/
+.github/
+.vscode/
+.gitignore
+.dockerignore
+.python-version
+README.md
+LICENSE
+
+# Local Python state
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Local data + secrets
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+.env.*
+
+# Internal artifacts (recon, plan, scripts) — not part of the deploy
+dev/
+
+# Tooling configs not needed at runtime
+pyrightconfig.json

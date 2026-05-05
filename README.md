@@ -96,4 +96,12 @@ Each vendor = 1 LLM call for URL selection (low reasoning effort) + 1 for signal
 
 ## Deployment
 
-`Procfile` is wired for Railway / Heroku-style platforms (`uvicorn app.main:app`). Mount a persistent volume at `DB_PATH` so SQLite survives restarts. Build step needs `playwright install chromium --with-deps` for the JS-fallback path.
+Ships with a `Dockerfile` based on Playwright's official Python image, so Chromium and its system libraries come pre-installed — no manual build hook required. Railway (and any Docker-aware platform) autodetects the Dockerfile and uses it.
+
+To deploy on Railway:
+
+1. Connect the repo (or `railway up`).
+2. In the dashboard, set the env vars from `.env.example` (at minimum `LLM_API_KEY`).
+3. Add a persistent volume mounted at `/app/data` so the SQLite database survives restarts.
+
+`Procfile` is also retained for Heroku-style platforms that prefer Nixpacks builds, but those need an explicit `playwright install chromium --with-deps` step in the build phase.
