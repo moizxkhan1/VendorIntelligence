@@ -3,13 +3,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.db import init_db
+from app.pipeline.browser import shutdown_browser
 from app.routes import pages, vendors
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    try:
+        yield
+    finally:
+        await shutdown_browser()
 
 
 app = FastAPI(

@@ -3,3 +3,5 @@ sqlalchemy>=2.0.49,<2.1
 aiosqlite>=0.22,<0.23
 pydantic-settings>=2.14,<3
 curl-cffi>=0.15,<0.16
+playwright>=1.59,<2
+beautifulsoup4>=4.14,<5
