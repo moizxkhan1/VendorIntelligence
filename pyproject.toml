@@ -11,6 +11,8 @@ dependencies = [
     "curl-cffi>=0.15,<0.16",
     "playwright>=1.59,<2",
     "beautifulsoup4>=4.14,<5",
+    "openai>=2.34,<3",
+    "anthropic>=0.99,<1",
 ]
 
 [project.optional-dependencies]
