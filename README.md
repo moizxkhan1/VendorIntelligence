@@ -102,6 +102,4 @@ To deploy on Railway:
 
 1. Connect the repo (or `railway up`).
 2. In the dashboard, set the env vars from `.env.example` (at minimum `LLM_API_KEY`).
-3. Add a persistent volume mounted at `/app/data` so the SQLite database survives restarts.
-
-`Procfile` is also retained for Heroku-style platforms that prefer Nixpacks builds, but those need an explicit `playwright install chromium --with-deps` step in the build phase.
+3. Optional: add a persistent volume mounted at `/app/data` if you want the SQLite database to survive restarts. Without it, each redeploy starts with a fresh DB — fine for demos.
