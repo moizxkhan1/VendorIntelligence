@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Insights — vendor-intel{% endblock %}
+
+{% set band_cell = {
+  'green': 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300',
+  'amber': 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300',
+  'red':   'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300',
+} %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <section>
+    <h1 class="text-2xl font-semibold tracking-tight">Cross-vendor insights</h1>
+    <p class="text-sm text-zinc-500 mt-1">Aggregations across {{ bundle.vendors_analyzed }} analyzed vendor{{ "s" if bundle.vendors_analyzed != 1 else "" }}.</p>
+  </section>
+
+  {% if bundle.vendors_analyzed == 0 %}
+    <div class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-zinc-500">
+      No analyzed data yet. <a href="/" class="underline">Run analysis</a> on at least one vendor to populate this view.
+    </div>
+  {% endif %}
+
+  {# ---------- Concentration risk ---------- #}
+  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+    <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <h2 class="text-sm font-medium">Concentration risk</h2>
+      <p class="text-xs text-zinc-500 mt-0.5">Sub-processors that show up across multiple vendors. Hidden lock-in radar — if all your vendors flow through the same processor, an outage there hits the whole portfolio.</p>
+    </div>
+    {% if bundle.concentration %}
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 dark:bg-zinc-950 text-xs uppercase tracking-wider text-zinc-500">
+          <tr>
+            <th class="text-left font-medium px-4 py-2">Sub-processor</th>
+            <th class="text-left font-medium px-4 py-2">Vendors</th>
+            <th class="text-right font-medium px-4 py-2 w-16">Count</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+          {% for row in bundle.concentration %}
+            <tr>
+              <td class="px-4 py-2 font-medium">{{ row.name }}</td>
+              <td class="px-4 py-2 text-xs font-mono text-zinc-600 dark:text-zinc-400">
+                {% for v in row.vendors %}<a href="/reports" class="hover:underline">{{ v }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+              </td>
+              <td class="px-4 py-2 text-right tabular-nums">{{ row.count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="px-4 py-6 text-sm text-zinc-500 text-center">No sub-processor overlap detected (yet).</p>
+    {% endif %}
+  </section>
+
+  {# ---------- Compliance grid ---------- #}
+  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+    <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <h2 class="text-sm font-medium">Compliance grid</h2>
+      <p class="text-xs text-zinc-500 mt-0.5">Certification coverage across the portfolio. Vendors missing SOC 2 (either type) sort to the top — where your due-diligence attention belongs.</p>
+    </div>
+    {% if bundle.compliance %}
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 dark:bg-zinc-950 text-xs uppercase tracking-wider text-zinc-500">
+          <tr>
+            <th class="text-left font-medium px-4 py-2">Vendor</th>
+            {% for cert in grid_certs %}
+              <th class="text-center font-mono font-medium px-2 py-2 w-20">{{ cert }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+          {% for row in bundle.compliance %}
+            <tr class="{% if row.missing_soc2 %}bg-red-50 dark:bg-red-950/20{% endif %}">
+              <td class="px-4 py-2 font-mono">{{ row.domain }}{% if row.missing_soc2 %}<span class="ml-2 text-xs text-red-600 dark:text-red-400">(no SOC 2)</span>{% endif %}</td>
+              {% for cert in grid_certs %}
+                <td class="text-center px-2 py-2">
+                  {% if row.certs[cert] %}
+                    <span class="text-emerald-600 dark:text-emerald-400">✓</span>
+                  {% else %}
+                    <span class="text-zinc-300 dark:text-zinc-700">—</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="px-4 py-6 text-sm text-zinc-500 text-center">No security extractions yet.</p>
+    {% endif %}
+  </section>
+
+  {# ---------- Privacy-policy freshness ---------- #}
+  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+    <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <h2 class="text-sm font-medium">Privacy-policy freshness</h2>
+      <p class="text-xs text-zinc-500 mt-0.5">Stalest first. A privacy policy that hasn't been touched in 2+ years often signals neglect — worth a fresh review at renewal.</p>
+    </div>
+    {% if bundle.freshness %}
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 dark:bg-zinc-950 text-xs uppercase tracking-wider text-zinc-500">
+          <tr>
+            <th class="text-left font-medium px-4 py-2">Vendor</th>
+            <th class="text-left font-medium px-4 py-2">Last updated</th>
+            <th class="text-left font-medium px-4 py-2">Age</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+          {% for row in bundle.freshness %}
+            <tr>
+              <td class="px-4 py-2 font-mono">{{ row.domain }}</td>
+              <td class="px-4 py-2 font-mono text-zinc-600 dark:text-zinc-400 tabular-nums">{{ row.last_updated }}</td>
+              <td class="px-4 py-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono {{ band_cell[row.band] }}">
+                  {{ row.months_old }} month{{ 's' if row.months_old != 1 else '' }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="px-4 py-6 text-sm text-zinc-500 text-center">No privacy-policy dates extracted yet.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

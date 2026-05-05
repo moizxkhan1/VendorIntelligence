@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from app.config import settings
 from app.db import init_db
 from app.pipeline.browser import shutdown_browser
-from app.routes import pages, reports, runs, vendors
+from app.routes import insights, pages, reports, runs, vendors
 from app.workers.runner import recover_stale_runs, worker_loop
 
 logging.basicConfig(level=settings.log_level.upper())
@@ -49,3 +49,4 @@ app.include_router(pages.router)
 app.include_router(vendors.router)
 app.include_router(runs.router)
 app.include_router(reports.router)
+app.include_router(insights.router)
