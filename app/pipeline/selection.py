@@ -105,6 +105,7 @@ async def select_for_extraction(
         system=_SYSTEM_TEMPLATE.format(max=MAX_URLS_PER_SIGNAL),
         user=user_prompt,
         schema=URLSelection,
+        reasoning_effort="low",  # URL picking is a simple matching task; save reasoning tokens
     )
 
     return _resolve(selection, trimmed)

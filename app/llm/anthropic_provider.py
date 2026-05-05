@@ -13,6 +13,8 @@ from typing import TypeVar
 from anthropic import AsyncAnthropic
 from pydantic import BaseModel
 
+from app.llm.base import ReasoningEffort
+
 T = TypeVar("T", bound=BaseModel)
 
 _TOOL_NAME = "submit_extraction"
@@ -29,7 +31,15 @@ class AnthropicProvider:
         self.model = model
         self._max_tokens = max_tokens
 
-    async def extract(self, *, system: str, user: str, schema: type[T]) -> T:
+    async def extract(
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        reasoning_effort: ReasoningEffort | None = None,  # accepted but unused — Anthropic's
+        # extended-thinking is configured via thinking={budget_tokens=...} which we don't expose yet
+    ) -> T:
         response = await self._client.messages.create(
             model=self.model,
             max_tokens=self._max_tokens,

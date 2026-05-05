@@ -14,6 +14,8 @@ from typing import TypeVar
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
+from app.llm.base import ReasoningEffort
+
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -28,7 +30,19 @@ class OpenAIProvider:
         self.model = model
         self.name = "openai-compat" if base_url else "openai"
 
-    async def extract(self, *, system: str, user: str, schema: type[T]) -> T:
+    async def extract(
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        reasoning_effort: ReasoningEffort | None = None,
+    ) -> T:
+        # Forward reasoning_effort only when set — non-reasoning models reject the parameter.
+        extra: dict[str, str] = {}
+        if reasoning_effort is not None:
+            extra["reasoning_effort"] = reasoning_effort
+
         completion = await self._client.chat.completions.parse(
             model=self.model,
             messages=[
@@ -36,6 +50,7 @@ class OpenAIProvider:
                 {"role": "user", "content": user},
             ],
             response_format=schema,
+            **extra,
         )
         msg = completion.choices[0].message
         if msg.refusal:
