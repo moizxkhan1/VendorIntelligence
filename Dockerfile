@@ -7,17 +7,20 @@ WORKDIR /app
 
 # Install Python deps first so Docker can cache the layer when only app code
 # changes. Re-run `playwright install chromium` afterwards: it's a no-op when
-# the package version matches the base image, but ensures correctness if the
-# pinned playwright python lib drifts from the image's bundled binary.
+# the base-image binary matches, but ensures correctness if the pinned
+# playwright python lib drifts from the image's bundled binary.
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
  && playwright install chromium
 
 COPY app/ ./app/
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Railway injects $PORT at runtime; default to 8000 for `docker run` locally.
 ENV PORT=8000
 EXPOSE 8000
 
-# Shell form so $PORT expands.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# ENTRYPOINT (not CMD) so the orchestrator can't accidentally override it
+# with an unshelled command. Any args passed by the platform's "Start
+# Command" field arrive as positional params and are ignored by the script.
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
