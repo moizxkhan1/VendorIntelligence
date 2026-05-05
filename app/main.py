@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.db import init_db
+from app.routes import pages, vendors
 
 
 @asynccontextmanager
@@ -24,6 +25,5 @@ async def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/")
-async def home() -> dict[str, str]:
-    return {"app": "vendor-intel", "status": "scaffold"}
+app.include_router(pages.router)
+app.include_router(vendors.router)

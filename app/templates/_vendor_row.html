@@ -1,0 +1,17 @@
+<tr id="vendor-{{ v.id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-950/50 transition-colors">
+  <td class="px-4 py-2 font-mono">{{ v.domain }}</td>
+  <td class="px-4 py-2 text-zinc-600 dark:text-zinc-400">{{ v.display_name or "—" }}</td>
+  <td class="px-4 py-2 text-zinc-600 dark:text-zinc-400 font-mono text-xs">{{ v.aliases | join(", ") if v.aliases else "—" }}</td>
+  <td class="px-4 py-2 text-zinc-600 dark:text-zinc-400 tabular-nums">{{ v.added_at.strftime("%Y-%m-%d") }}</td>
+  <td class="px-4 py-2 text-right">
+    <button
+      hx-delete="/vendors/{{ v.id }}"
+      hx-target="#vendor-{{ v.id }}"
+      hx-swap="outerHTML"
+      hx-confirm="Remove {{ v.domain }}?"
+      class="text-xs text-red-600 dark:text-red-400 hover:underline underline-offset-2"
+    >
+      Remove
+    </button>
+  </td>
+</tr>

@@ -1,0 +1,11 @@
+{% if vendors %}
+  {% for v in vendors %}
+    {% include "_vendor_row.html" %}
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="5" class="text-center text-zinc-500 px-4 py-10 text-sm">
+      No vendors yet — add one above, or click <span class="font-mono">Seed 19 starter vendors</span>.
+    </td>
+  </tr>
+{% endif %}

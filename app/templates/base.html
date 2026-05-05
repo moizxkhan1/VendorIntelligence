@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" class="bg-zinc-50 dark:bg-zinc-950">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}vendor-intel{% endblock %}</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" type="module"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.9" defer></script>
+</head>
+<body class="text-zinc-900 dark:text-zinc-100 min-h-screen antialiased">
+  <header class="border-b border-zinc-200 dark:border-zinc-800">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-baseline gap-3">
+        <a href="/" class="font-mono font-semibold tracking-tight text-base">vendor-intel</a>
+        <span class="text-xs text-zinc-500">SaaS procurement intelligence</span>
+      </div>
+      <nav class="flex gap-6 text-sm text-zinc-600 dark:text-zinc-400">
+        <a href="/" class="hover:text-zinc-900 dark:hover:text-zinc-100">Vendors</a>
+        <a href="/reports" class="hover:text-zinc-900 dark:hover:text-zinc-100">Reports</a>
+      </nav>
+    </div>
+  </header>
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
