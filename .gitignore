@@ -6,3 +6,10 @@ __pycache__/
 .env
 .env.local
 .DS_Store
+
+# Local SQLite
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
