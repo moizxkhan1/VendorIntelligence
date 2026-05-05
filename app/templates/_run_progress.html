@@ -1,0 +1,74 @@
+{# Polled by HTMX every 2s while the run is in flight. Once status is terminal
+   ("done"/"failed"), the response no longer carries the hx-trigger attribute,
+   so polling stops without any client-side toggling.                         #}
+<div
+  id="run-progress"
+  {% if run.status in ("pending", "running") %}
+  hx-get="/runs/{{ run.id }}/fragment"
+  hx-trigger="every 2s"
+  hx-swap="outerHTML"
+  {% endif %}
+>
+  <div class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-zinc-100 dark:bg-zinc-950 text-xs uppercase tracking-wider text-zinc-500">
+        <tr>
+          <th class="text-left font-medium px-4 py-2">Vendor</th>
+          <th class="text-left font-medium px-4 py-2">Stage</th>
+          <th class="text-left font-medium px-4 py-2">Status</th>
+          <th class="text-left font-medium px-4 py-2">Risk</th>
+          <th class="text-left font-medium px-4 py-2">Detail</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+        {% for vr, vendor, report in rows %}
+          <tr>
+            <td class="px-4 py-2 font-mono">{{ vendor.domain }}</td>
+            <td class="px-4 py-2 text-zinc-600 dark:text-zinc-400">{{ vr.current_stage }}</td>
+            <td class="px-4 py-2">
+              {% set s = vr.status %}
+              {% if s == "done" %}
+                <span class="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">● done</span>
+              {% elif s == "running" %}
+                <span class="inline-flex items-center gap-1.5 text-blue-700 dark:text-blue-400">● running</span>
+              {% elif s == "failed" %}
+                <span class="inline-flex items-center gap-1.5 text-red-700 dark:text-red-400">● failed</span>
+              {% else %}
+                <span class="inline-flex items-center gap-1.5 text-zinc-500">○ {{ s }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if report %}
+                {% set band = report.risk_band %}
+                <span class="inline-flex items-center gap-2 font-mono text-xs">
+                  {% if band == "green" %}
+                    <span class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">{{ report.risk_score }} · {{ band }}</span>
+                  {% elif band == "amber" %}
+                    <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">{{ report.risk_score }} · {{ band }}</span>
+                  {% else %}
+                    <span class="px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300">{{ report.risk_score }} · {{ band }}</span>
+                  {% endif %}
+                </span>
+              {% else %}
+                <span class="text-zinc-500 text-xs">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-xs text-zinc-500">
+              {% if vr.error %}
+                <span class="text-red-600 dark:text-red-400">{{ vr.error }}</span>
+              {% elif vr.used_browser %}
+                used browser
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if run.status == "done" %}
+    <p class="text-sm text-zinc-500 mt-3">Run complete.</p>
+  {% elif run.status == "failed" %}
+    <p class="text-sm text-red-600 dark:text-red-400 mt-3">Run failed.</p>
+  {% endif %}
+</div>

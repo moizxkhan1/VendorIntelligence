@@ -23,6 +23,9 @@ class Vendor(Base):
     discovered_urls: Mapped[list["DiscoveredUrl"]] = relationship(
         back_populates="vendor", cascade="all, delete-orphan"
     )
+    vendor_runs: Mapped[list["VendorRun"]] = relationship(
+        back_populates="vendor", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"Vendor(id={self.id}, domain={self.domain!r})"
@@ -127,3 +130,54 @@ class Report(Base):
 
     def __repr__(self) -> str:
         return f"Report(vendor_id={self.vendor_id}, score={self.risk_score}, band={self.risk_band!r})"
+
+
+class PipelineRun(Base):
+    """A single end-to-end analysis pass over a set of vendors."""
+
+    __tablename__ = "pipeline_run"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    status: Mapped[str] = mapped_column(String(16), index=True, default="pending")
+    # pending | running | done | failed
+    trigger: Mapped[str] = mapped_column(String(16), default="manual")
+    started_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    vendor_runs: Mapped[list["VendorRun"]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"PipelineRun(id={self.id}, status={self.status!r})"
+
+
+class VendorRun(Base):
+    """One vendor's slot in a PipelineRun. current_stage is updated as it
+    progresses so the UI can show live status."""
+
+    __tablename__ = "vendor_run"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    run_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_run.id", ondelete="CASCADE"), index=True
+    )
+    vendor_id: Mapped[int] = mapped_column(
+        ForeignKey("vendor.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    # pending | running | done | failed
+    current_stage: Mapped[str] = mapped_column(String(16), default="queued")
+    # queued | discovery | ranking | selection | fetching | extraction | analysis | done
+    used_browser: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    run: Mapped[PipelineRun] = relationship(back_populates="vendor_runs")
+    vendor: Mapped[Vendor] = relationship(back_populates="vendor_runs")
+
+    def __repr__(self) -> str:
+        return f"VendorRun(id={self.id}, vendor_id={self.vendor_id}, status={self.status!r}, stage={self.current_stage!r})"
