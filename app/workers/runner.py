@@ -85,16 +85,6 @@ async def _fail_run(run_id: int, reason: str) -> None:
         await s.commit()
 
 
-async def _mark_run_finished(run_id: int) -> None:
-    async with SessionLocal() as s:
-        run = await s.get(PipelineRun, run_id)
-        if run is None:
-            return
-        run.status = "done"
-        run.finished_at = _utcnow()
-        await s.commit()
-
-
 async def worker_loop(stop_event: asyncio.Event) -> None:
     """Pulls pending pipeline_runs and processes them serially."""
     log.info("vendor-intel worker started")
@@ -117,8 +107,8 @@ async def worker_loop(stop_event: asyncio.Event) -> None:
             continue
 
         try:
+            # run_pipeline owns the lifecycle — sets status to done in its finally block.
             await run_pipeline(run_id, llm)
-            await _mark_run_finished(run_id)
         except Exception as e:
             log.exception("run %d crashed", run_id)
             await _fail_run(run_id, f"{type(e).__name__}: {str(e)[:480]}")

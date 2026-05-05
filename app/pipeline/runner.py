@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import SessionLocal
 from app.llm import LLMProvider
-from app.models import DiscoveredUrl, ScrapedPage, Vendor, VendorRun
+from app.models import DiscoveredUrl, PipelineRun, ScrapedPage, Vendor, VendorRun
 from app.pipeline.analysis import analyze_vendor, persist_report
 from app.pipeline.discovery import discover_urls, persist_discovery
 from app.pipeline.extraction import extract_for_vendor, persist_extraction
@@ -36,13 +36,26 @@ def _utcnow() -> datetime:
 
 
 async def run_pipeline(run_id: int, llm: LLMProvider) -> None:
-    """Process every VendorRun under a PipelineRun, with bounded concurrency."""
+    """Drive a PipelineRun end-to-end: pending/running -> done (or failed).
+
+    Owns the full lifecycle so it's safe to call from the worker, an HTTP
+    handler, or a test. If a worker has already transitioned the run to
+    'running' via `claim_pending_run`, this is a no-op for that step.
+    """
+    # Transition pending -> running if needed
     async with SessionLocal() as s:
+        run = await s.get(PipelineRun, run_id)
+        if run is None:
+            return
+        if run.status in ("done", "failed"):
+            return
+        if run.status == "pending":
+            run.status = "running"
+            run.started_at = _utcnow()
+            await s.commit()
         vendor_run_ids: list[int] = list(
             (
-                await s.execute(
-                    select(VendorRun.id).where(VendorRun.run_id == run_id)
-                )
+                await s.execute(select(VendorRun.id).where(VendorRun.run_id == run_id))
             ).scalars().all()
         )
 
@@ -52,7 +65,15 @@ async def run_pipeline(run_id: int, llm: LLMProvider) -> None:
         async with sem:
             await run_for_vendor(vrid, llm)
 
-    await asyncio.gather(*(gated(vrid) for vrid in vendor_run_ids))
+    try:
+        await asyncio.gather(*(gated(vrid) for vrid in vendor_run_ids))
+    finally:
+        async with SessionLocal() as s:
+            run = await s.get(PipelineRun, run_id)
+            if run is not None and run.status not in ("done", "failed"):
+                run.status = "done"
+                run.finished_at = _utcnow()
+                await s.commit()
 
 
 async def run_for_vendor(vendor_run_id: int, llm: LLMProvider) -> None:

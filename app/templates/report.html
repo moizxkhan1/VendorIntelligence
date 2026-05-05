@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vendor.domain }} — vendor-intel{% endblock %}
+
+{% set band = report.risk_band if report else None %}
+{% set band_classes = {
+  'green': 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300',
+  'amber': 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300',
+  'red':   'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300',
+} %}
+{% set sev_classes = {
+  'info':  'border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200',
+  'warn':  'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200',
+  'alert': 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-200',
+} %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ---------- Header ---------- #}
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <div class="flex items-baseline gap-3">
+        <h1 class="text-2xl font-semibold tracking-tight font-mono">{{ vendor.domain }}</h1>
+        {% if vendor.display_name %}
+          <span class="text-sm text-zinc-500">{{ vendor.display_name }}</span>
+        {% endif %}
+      </div>
+      {% if vendor.aliases %}
+        <p class="text-xs text-zinc-500 mt-1 font-mono">aliases: {{ vendor.aliases|join(", ") }}</p>
+      {% endif %}
+      {% if report %}
+        <p class="text-sm text-zinc-500 mt-2">
+          Generated {{ report.generated_at.strftime("%Y-%m-%d %H:%M") }}
+        </p>
+      {% endif %}
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/reports/{{ vendor.id }}.json" class="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline underline-offset-2">JSON</a>
+      <a href="/reports" class="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">← All reports</a>
+    </div>
+  </div>
+
+  {% if not report %}
+    <div class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center">
+      <p class="text-sm text-zinc-500">No report has been generated for this vendor yet.</p>
+      <form action="/runs" method="post" class="inline-block mt-4">
+        <button class="rounded bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-medium">Run analysis</button>
+      </form>
+    </div>
+  {% else %}
+
+    {# ---------- Risk score hero ---------- #}
+    <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+      <div class="flex items-center gap-6">
+        <div class="text-6xl font-bold font-mono tabular-nums {{ band_classes[band].split(' ')[2] }}">
+          {{ report.risk_score }}
+        </div>
+        <div>
+          <div class="inline-flex px-2.5 py-1 rounded text-xs font-medium uppercase tracking-wide {{ band_classes[band] }}">
+            {{ band }}
+          </div>
+          <p class="text-sm text-zinc-500 mt-1">Renewal-risk score (0–100, lower is safer)</p>
+        </div>
+      </div>
+    </section>
+
+    {# ---------- Diff vs prior ---------- #}
+    {% if diff %}
+      <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <h2 class="text-sm font-medium mb-2">Since previous run · {{ diff.prior_generated_at.strftime("%Y-%m-%d") }}</h2>
+        <div class="text-sm text-zinc-700 dark:text-zinc-300 space-y-1">
+          {% if diff.score_delta != 0 or diff.band_changed %}
+            <div>
+              Score
+              {% if diff.score_delta < 0 %}
+                <span class="text-emerald-700 dark:text-emerald-400 font-mono">{{ diff.score_delta }}</span> (improved)
+              {% elif diff.score_delta > 0 %}
+                <span class="text-red-700 dark:text-red-400 font-mono">+{{ diff.score_delta }}</span> (worse)
+              {% else %}
+                unchanged
+              {% endif %}
+              {% if diff.band_changed %}, band {{ diff.prior_band }} → {{ band }}{% endif %}
+            </div>
+          {% endif %}
+          {% for ch in diff.component_changes %}
+            <div class="text-zinc-600 dark:text-zinc-400">
+              <span class="text-xs uppercase tracking-wide font-medium">{{ ch.kind }}</span>
+              {{ ch.label }} <span class="font-mono text-xs">{{ ch.detail }}</span>
+            </div>
+          {% endfor %}
+          {% for ch in diff.flag_changes %}
+            <div class="text-zinc-600 dark:text-zinc-400">
+              <span class="text-xs uppercase tracking-wide font-medium">{{ ch.kind }} flag</span>
+              {{ ch.label }}
+            </div>
+          {% endfor %}
+          {% if not diff.score_delta and not diff.component_changes and not diff.flag_changes %}
+            <span class="text-zinc-500 text-sm">No changes vs previous report.</span>
+          {% endif %}
+        </div>
+      </section>
+    {% endif %}
+
+    {# ---------- Score breakdown ---------- #}
+    <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+      <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+        <h2 class="text-sm font-medium">Score breakdown</h2>
+        <p class="text-xs text-zinc-500 mt-0.5">Each component's contribution + the evidence it came from.</p>
+      </div>
+      {% if report.components %}
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {% for c in report.components %}
+              <tr>
+                <td class="px-4 py-3 align-top">
+                  <div class="font-medium">{{ c.label }}</div>
+                  <div class="text-xs text-zinc-500 mt-0.5">{{ c.rationale }}</div>
+                </td>
+                <td class="px-4 py-3 text-right align-top whitespace-nowrap">
+                  <span class="font-mono text-sm
+                    {% if c.contribution < 0 %}text-emerald-700 dark:text-emerald-400
+                    {% elif c.contribution > 0 %}text-red-700 dark:text-red-400
+                    {% else %}text-zinc-500{% endif %}">
+                    {{ '%+d' % c.contribution }}
+                  </span>
+                  {% if c.evidence_url %}
+                    <div class="text-xs mt-1">
+                      <a href="{{ c.evidence_url }}" target="_blank" rel="noopener" class="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline underline-offset-2 truncate inline-block max-w-xs">{{ c.evidence_url }}</a>
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="px-4 py-6 text-sm text-zinc-500 text-center">No components contributed to this score.</p>
+      {% endif %}
+    </section>
+
+    {# ---------- Red flags ---------- #}
+    {% if report.red_flags %}
+      <section class="space-y-2">
+        <h2 class="text-sm font-medium">Flags</h2>
+        <div class="space-y-2">
+          {% for f in report.red_flags %}
+            <div class="rounded-lg border p-3 {{ sev_classes.get(f.severity, sev_classes['warn']) }}">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="font-medium text-sm">{{ f.label }}</div>
+                  {% if f.detail %}<div class="text-xs mt-0.5 opacity-80">{{ f.detail }}</div>{% endif %}
+                </div>
+                <span class="text-xs uppercase tracking-wide opacity-60">{{ f.severity }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {# ---------- Signal cards ---------- #}
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {{ signal_card("security", "Security posture", extractions) }}
+      {{ signal_card("privacy", "Privacy & data residency", extractions) }}
+      {{ signal_card("subprocessors", "Sub-processors", extractions) }}
+      {{ signal_card("pricing", "Pricing", extractions) }}
+      {{ signal_card("ownership", "Ownership", extractions) }}
+      {{ signal_card("operating_health", "Operating health", extractions) }}
+    </section>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{# Macros render each signal card. Defining them here keeps the page in one file
+   while still letting each signal type pick its own field layout.              #}
+
+{% macro signal_card(key, title, extractions) -%}
+  {% set ext = extractions.get(key) %}
+  <div class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3">
+    <div class="flex items-baseline justify-between">
+      <h3 class="text-sm font-semibold">{{ title }}</h3>
+      {% if ext %}
+        <span class="text-xs text-emerald-700 dark:text-emerald-400">found</span>
+      {% else %}
+        <span class="text-xs text-zinc-500">no data</span>
+      {% endif %}
+    </div>
+    {% if ext %}
+      {% set p = ext.payload %}
+      {% if key == "security" %}
+        {% if p.certifications %}
+          <div class="flex flex-wrap gap-1.5">
+            {% for c in p.certifications %}
+              <span class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs font-mono">
+                {{ c.type }}{% if c.detail %} · {{ c.detail }}{% endif %}
+              </span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-xs text-zinc-500">No certifications detected.</div>
+        {% endif %}
+        {% if p.bug_bounty %}<div class="text-xs">Bug bounty: yes</div>{% endif %}
+        {% if p.notes %}<div class="text-xs text-zinc-600 dark:text-zinc-400">{{ p.notes }}</div>{% endif %}
+
+      {% elif key == "privacy" %}
+        <dl class="text-xs grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          {% if p.last_updated %}<dt class="text-zinc-500">Last updated</dt><dd class="font-mono">{{ p.last_updated }}</dd>{% endif %}
+          <dt class="text-zinc-500">GDPR transfer</dt><dd class="font-mono">{{ p.gdpr_mechanism }}</dd>
+          <dt class="text-zinc-500">Data residency</dt><dd class="font-mono">{{ p.data_residency }}</dd>
+        </dl>
+        {% if p.notes %}<div class="text-xs text-zinc-600 dark:text-zinc-400">{{ p.notes }}</div>{% endif %}
+
+      {% elif key == "subprocessors" %}
+        <div class="text-xs">
+          Public listing: <span class="font-mono">{{ "yes" if p.publicly_listed else "no" }}</span>
+          · {{ p.processors|length }} listed
+        </div>
+        {% if p.processors %}
+          <ul class="text-xs space-y-1">
+            {% for sp in p.processors[:8] %}
+              <li class="font-mono">
+                <span class="font-medium">{{ sp.name }}</span>
+                {% if sp.purpose %}<span class="text-zinc-500"> — {{ sp.purpose }}</span>{% endif %}
+                {% if sp.region %}<span class="text-zinc-500"> · {{ sp.region }}</span>{% endif %}
+              </li>
+            {% endfor %}
+            {% if p.processors|length > 8 %}
+              <li class="text-zinc-500">+ {{ p.processors|length - 8 }} more</li>
+            {% endif %}
+          </ul>
+        {% endif %}
+
+      {% elif key == "pricing" %}
+        <dl class="text-xs grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          <dt class="text-zinc-500">Model</dt><dd class="font-mono">{{ p.model }}</dd>
+          {% if p.starting_price_usd %}<dt class="text-zinc-500">Starts at</dt><dd class="font-mono">${{ p.starting_price_usd }}/mo</dd>{% endif %}
+          {% if p.enterprise_only is not none %}<dt class="text-zinc-500">Enterprise-only</dt><dd>{{ "yes" if p.enterprise_only else "no" }}</dd>{% endif %}
+        </dl>
+        {% if p.tiers %}
+          <ul class="text-xs space-y-0.5 mt-1">
+            {% for t in p.tiers %}
+              <li class="font-mono">
+                <span>{{ t.name }}</span>
+                {% if t.monthly_usd %} · ${{ t.monthly_usd }}/mo{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if p.notes %}<div class="text-xs text-zinc-600 dark:text-zinc-400">{{ p.notes }}</div>{% endif %}
+
+      {% elif key == "ownership" %}
+        <dl class="text-xs grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          <dt class="text-zinc-500">Status</dt><dd class="font-mono">{{ p.status }}</dd>
+          {% if p.parent %}<dt class="text-zinc-500">Parent</dt><dd>{{ p.parent }}</dd>{% endif %}
+          {% if p.founded_year %}<dt class="text-zinc-500">Founded</dt><dd class="font-mono">{{ p.founded_year }}</dd>{% endif %}
+          {% if p.ticker %}<dt class="text-zinc-500">Ticker</dt><dd class="font-mono">{{ p.ticker }}</dd>{% endif %}
+          {% if p.last_round %}
+            <dt class="text-zinc-500">Last round</dt>
+            <dd class="font-mono">{{ p.last_round.stage }}{% if p.last_round.amount_usd %} · ${{ p.last_round.amount_usd }}{% endif %}</dd>
+          {% endif %}
+        </dl>
+
+      {% elif key == "operating_health" %}
+        <dl class="text-xs grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          {% if p.status_incidents_90d is not none %}<dt class="text-zinc-500">Status incidents (90d)</dt><dd class="font-mono">{{ p.status_incidents_90d }}</dd>{% endif %}
+          <dt class="text-zinc-500">Recent breaches</dt><dd class="font-mono">{{ p.recent_breaches|length }}</dd>
+          <dt class="text-zinc-500">Recent layoffs</dt><dd class="font-mono">{{ p.recent_layoffs|length }}</dd>
+          <dt class="text-zinc-500">Leadership changes</dt><dd class="font-mono">{{ p.leadership_changes|length }}</dd>
+        </dl>
+        {% if p.notes %}<div class="text-xs text-zinc-600 dark:text-zinc-400">{{ p.notes }}</div>{% endif %}
+      {% endif %}
+
+      {% if ext.source_urls %}
+        <details class="text-xs text-zinc-500">
+          <summary class="cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100">Sources ({{ ext.source_urls|length }})</summary>
+          <ul class="mt-1.5 space-y-0.5 pl-3">
+            {% for u in ext.source_urls %}
+              <li><a href="{{ u }}" target="_blank" rel="noopener" class="hover:underline truncate inline-block max-w-full font-mono">{{ u }}</a></li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endif %}
+    {% endif %}
+  </div>
+{%- endmacro %}
