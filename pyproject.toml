@@ -1,0 +1,25 @@
+[project]
+name = "vendor-intel"
+version = "0.1.0"
+description = "Vendor intelligence reports for SaaS procurement — scrapes public posture data and produces CFO-grade reports."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.136,<0.137",
+]
+
+[project.optional-dependencies]
+dev = [
+    "requests>=2.32.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
