@@ -1,5 +1,5 @@
 [project]
-name = "vendor-intel"
+name = "vendor-intelligence"
 version = "0.1.0"
 description = "Vendor intelligence reports for SaaS procurement — scrapes public posture data and produces CFO-grade reports."
 requires-python = ">=3.11"

@@ -1,11 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="space-y-6">
 
-  <section>
-    <h1 class="text-2xl font-semibold tracking-tight">Vendors</h1>
-    <p class="text-sm text-zinc-500 mt-1">Add SaaS vendor domains; the pipeline analyzes each for security posture, sub-processors, privacy, pricing, ownership, and operating-health flags.</p>
+  <section class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Vendors</h1>
+      <p class="text-sm text-zinc-500 mt-1">Add the SaaS vendors you want to evaluate. We&rsquo;ll generate a renewal-risk report for each, covering security, privacy, pricing, ownership, and operating health.</p>
+    </div>
+    <form action="/runs" method="post" class="shrink-0">
+      <button class="rounded bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-sm font-semibold whitespace-nowrap">
+        Run analysis
+      </button>
+    </form>
   </section>
 
   <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
@@ -45,28 +52,19 @@
     </table>
   </section>
 
-  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex items-center justify-between">
-    <div>
-      <h2 class="text-sm font-medium">Run analysis</h2>
-      <p class="text-xs text-zinc-500 mt-0.5">Fans out the pipeline across every vendor in this list.</p>
-    </div>
-    <form action="/runs" method="post">
-      <button class="rounded bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-medium">
-        Run analysis
-      </button>
-    </form>
-  </section>
-
-  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="text-sm font-medium">Bulk import</h2>
+  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-4">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-sm font-medium">Bulk import</h2>
+        <p class="text-xs text-zinc-500 mt-0.5">Paste domains, one per line. Or load the assessment brief&rsquo;s 19 starter vendors with one click.</p>
+      </div>
       <button
         hx-post="/vendors/seed"
         hx-target="#vendor-list"
         hx-swap="innerHTML"
-        class="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline underline-offset-2"
+        class="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm font-medium whitespace-nowrap"
       >
-        Seed 19 starter vendors from the brief
+        Seed 19 starter vendors
       </button>
     </div>
     <form hx-post="/vendors/bulk" hx-target="#vendor-list" hx-swap="innerHTML" class="space-y-2">

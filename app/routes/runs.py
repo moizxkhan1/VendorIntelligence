@@ -23,8 +23,10 @@ async def create_run(session: AsyncSession = Depends(get_session)) -> RedirectRe
     if not vendor_ids:
         raise HTTPException(status_code=400, detail="No vendors to analyze — add some first.")
 
-    run_id = await create_pipeline_run(session, vendor_ids)
-    return RedirectResponse(url=f"/runs/{run_id}", status_code=303)
+    await create_pipeline_run(session, vendor_ids)
+    # Land users on /reports — that's where the value materializes. The run
+    # progress page (/runs/{id}) still exists for debugging via direct URL.
+    return RedirectResponse(url="/reports", status_code=303)
 
 
 @router.get("/runs/{run_id}", response_class=HTMLResponse)

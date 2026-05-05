@@ -278,10 +278,18 @@ def detect_red_flags(intel: _IntelBundle, *, today: date | None = None) -> list[
         ))
 
     if intel.operating_health and intel.operating_health.recent_breaches:
+        first = intel.operating_health.recent_breaches[0]
+        prefix = (
+            f"{len(intel.operating_health.recent_breaches)} disclosed breach(es): "
+            if len(intel.operating_health.recent_breaches) > 1 else ""
+        )
+        date_str = f"{first.date_iso} — " if first.date_iso else ""
+        # Fall back to a generic message when the LLM couldn't parse a specific one.
+        body = (first.description or "details not extracted")[:240]
         flags.append(RedFlag(
             code="breach_disclosed",
             label="Breach disclosed",
-            detail=f"{len(intel.operating_health.recent_breaches)} disclosed breach(es)",
+            detail=f"{prefix}{date_str}{body}",
             severity=FlagSeverity.ALERT,
         ))
 

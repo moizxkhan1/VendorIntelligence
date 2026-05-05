@@ -1,70 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Reports — vendor-intel{% endblock %}
+{% block title %}Reports — VendorIntelligence{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-  <section>
-    <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
-    <p class="text-sm text-zinc-500 mt-1">Latest renewal-risk report per vendor. Riskiest first.</p>
+
+  <section class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
+      <p class="text-sm text-zinc-500 mt-1">Renewal-risk reports per vendor. Riskiest first; vendors currently being analyzed appear at the top.</p>
+    </div>
+    <form action="/runs" method="post" class="shrink-0">
+      <button class="rounded bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-sm font-semibold whitespace-nowrap">
+        Run analysis
+      </button>
+    </form>
   </section>
 
-  <section class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-zinc-100 dark:bg-zinc-950 text-xs uppercase tracking-wider text-zinc-500">
-        <tr>
-          <th class="text-left font-medium px-4 py-2">Vendor</th>
-          <th class="text-left font-medium px-4 py-2">Risk</th>
-          <th class="text-left font-medium px-4 py-2">Flags</th>
-          <th class="text-left font-medium px-4 py-2">Generated</th>
-          <th class="px-4 py-2"></th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
-        {% for vendor, report in rows %}
-          <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-950/50 transition-colors">
-            <td class="px-4 py-3 font-mono">{{ vendor.domain }}</td>
-            <td class="px-4 py-3">
-              {% if report %}
-                {% set band = report.risk_band %}
-                <span class="inline-flex items-center gap-2 font-mono text-xs">
-                  {% if band == "green" %}
-                    <span class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">{{ report.risk_score }} · {{ band }}</span>
-                  {% elif band == "amber" %}
-                    <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">{{ report.risk_score }} · {{ band }}</span>
-                  {% else %}
-                    <span class="px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300">{{ report.risk_score }} · {{ band }}</span>
-                  {% endif %}
-                </span>
-              {% else %}
-                <span class="text-zinc-500 text-xs">No report yet</span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">
-              {% if report and report.red_flags %}
-                {{ report.red_flags|length }} flag{{ "s" if report.red_flags|length != 1 else "" }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td class="px-4 py-3 text-zinc-500 text-xs tabular-nums">
-              {% if report %}{{ report.generated_at.strftime("%Y-%m-%d %H:%M") }}{% else %}—{% endif %}
-            </td>
-            <td class="px-4 py-3 text-right">
-              {% if report %}
-                <a href="/reports/{{ vendor.id }}" class="text-xs text-zinc-700 dark:text-zinc-300 hover:underline">View →</a>
-              {% else %}
-                <span class="text-zinc-400 text-xs">—</span>
-              {% endif %}
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="5" class="text-center text-zinc-500 px-4 py-10 text-sm">
-            No reports yet. <a href="/" class="underline">Run analysis</a> to generate them.
-          </td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </section>
+  {% include "_reports_table.html" %}
+
 </div>
 {% endblock %}

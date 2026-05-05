@@ -1,4 +1,4 @@
-# vendor-intel
+# VendorIntelligence
 
 Vendor intelligence reports for SaaS procurement. Given a list of vendor domains, produces a per-vendor report covering security posture, sub-processors, privacy & data residency, pricing signals, ownership, and operating-health flags — plus a composite renewal-risk score with attributed components.
 

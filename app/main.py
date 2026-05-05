@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     await recover_stale_runs()
 
     stop_event = asyncio.Event()
-    worker_task = asyncio.create_task(worker_loop(stop_event), name="vendor-intel-worker")
+    worker_task = asyncio.create_task(worker_loop(stop_event), name="vendor-intelligence-worker")
 
     try:
         yield
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="vendor-intel",
+    title="VendorIntelligence",
     description="Vendor intelligence reports for SaaS procurement.",
     version="0.1.0",
     lifespan=lifespan,

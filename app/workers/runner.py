@@ -87,7 +87,7 @@ async def _fail_run(run_id: int, reason: str) -> None:
 
 async def worker_loop(stop_event: asyncio.Event) -> None:
     """Pulls pending pipeline_runs and processes them serially."""
-    log.info("vendor-intel worker started")
+    log.info("VendorIntelligence worker started")
     while not stop_event.is_set():
         run_id = await claim_pending_run()
 
@@ -113,4 +113,4 @@ async def worker_loop(stop_event: asyncio.Event) -> None:
             log.exception("run %d crashed", run_id)
             await _fail_run(run_id, f"{type(e).__name__}: {str(e)[:480]}")
 
-    log.info("vendor-intel worker stopped")
+    log.info("VendorIntelligence worker stopped")
