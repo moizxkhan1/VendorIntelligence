@@ -102,3 +102,28 @@ class SignalExtraction(Base):
 
     def __repr__(self) -> str:
         return f"SignalExtraction(vendor_id={self.vendor_id}, signal_type={self.signal_type!r})"
+
+
+class Report(Base):
+    """Composite renewal-risk report for a vendor.
+
+    History is preserved (no replace-on-write) so the diff-vs-last-run
+    feature has data to compare against. The latest report is the row
+    with the highest `generated_at`.
+    """
+
+    __tablename__ = "report"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    vendor_id: Mapped[int] = mapped_column(
+        ForeignKey("vendor.id", ondelete="CASCADE"), index=True
+    )
+    risk_score: Mapped[int] = mapped_column(Integer)
+    risk_band: Mapped[str] = mapped_column(String(16), index=True)
+    components: Mapped[list] = mapped_column(JSON)   # [ScoreComponent]
+    red_flags: Mapped[list] = mapped_column(JSON)    # [RedFlag]
+    summary_md: Mapped[str | None] = mapped_column(Text, nullable=True)
+    generated_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"Report(vendor_id={self.vendor_id}, score={self.risk_score}, band={self.risk_band!r})"

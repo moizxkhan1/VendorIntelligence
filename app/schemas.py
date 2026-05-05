@@ -228,3 +228,44 @@ class VendorIntelligence(BaseModel):
     pricing: PricingSignal | None = None
     ownership: Ownership | None = None
     operating_health: OperatingHealth | None = None
+
+
+# ----------------------------------------------------------------------------
+# Risk scoring (analysis stage output)
+# ----------------------------------------------------------------------------
+
+
+class RiskBand(str, Enum):
+    GREEN = "green"
+    AMBER = "amber"
+    RED = "red"
+
+
+class FlagSeverity(str, Enum):
+    INFO = "info"
+    WARN = "warn"
+    ALERT = "alert"
+
+
+class ScoreComponent(BaseModel):
+    """One row in the risk-score breakdown — finance can audit each."""
+
+    name: str
+    label: str
+    contribution: int
+    rationale: str
+    evidence_url: str | None = None
+
+
+class RedFlag(BaseModel):
+    code: str
+    label: str
+    detail: str | None = None
+    severity: FlagSeverity = FlagSeverity.WARN
+
+
+class RiskScore(BaseModel):
+    score: int
+    band: RiskBand
+    components: list[ScoreComponent]
+    red_flags: list[RedFlag]
