@@ -79,3 +79,26 @@ class ScrapedPage(Base):
             f"ScrapedPage(id={self.id}, url={self.url!r}, "
             f"http_status={self.http_status}, used_browser={self.used_browser})"
         )
+
+
+class SignalExtraction(Base):
+    """One row per (vendor, signal_type) — the structured LLM output.
+
+    `payload` is the JSON form of the matching Pydantic signal model
+    (SecurityPosture, SubProcessors, etc.). `source_urls` records which
+    pages were in the LLM context for traceability.
+    """
+
+    __tablename__ = "signal_extraction"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    vendor_id: Mapped[int] = mapped_column(
+        ForeignKey("vendor.id", ondelete="CASCADE"), index=True
+    )
+    signal_type: Mapped[str] = mapped_column(String(32), index=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    source_urls: Mapped[list[str]] = mapped_column(JSON, default=list)
+    extracted_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    def __repr__(self) -> str:
+        return f"SignalExtraction(vendor_id={self.vendor_id}, signal_type={self.signal_type!r})"
